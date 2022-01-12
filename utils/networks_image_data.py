@@ -21,7 +21,7 @@ def deconv_block(in_channels, out_channels, kernel_size=4, stride=2, padding=1, 
 
 class Encoder(nn.Module):
     """
-    An encoder that
+    An encoder that down-sample the input x to latent representation z.
     """
     def __init__(self, latent_dim=100):
         super().__init__()
@@ -29,8 +29,7 @@ class Encoder(nn.Module):
         self.conv1 = nn.Sequential(*conv_block(in_channels=3, out_channels=128, kernel_size=4, stride=2))
         self.conv2 = nn.Sequential(*conv_block(in_channels=128, out_channels=256, kernel_size=4, stride=2))
         self.conv3 = nn.Sequential(*conv_block(in_channels=256, out_channels=512, kernel_size=4, stride=2))
-        self.conv4 = nn.Conv2d(in_channels=512, out_channels=latent_dim, kernel_size=(4, 4),
-                      padding=0, stride=(1, 1))
+        self.conv4 = nn.Conv2d(in_channels=512, out_channels=latent_dim, kernel_size=(4, 4), padding=0, stride=(1, 1))
         self.latent_dim = latent_dim
 
     def forward(self, x):
@@ -39,13 +38,12 @@ class Encoder(nn.Module):
         x = self.conv3(x)
         z = self.conv4(x)
         z = z.view(-1, self.latent_dim)
-        print(z.shape)
         return z
 
 
 class Decoder(nn.Module):
     """
-    A decoder which is basically the Generator.
+    A Decoder representing the Generator that up-sample the latent representation z to sample x.
     """
     def __init__(self, latent_dim=100):
         super().__init__()
@@ -63,7 +61,6 @@ class Decoder(nn.Module):
         x = self.conv2(x)
         x = self.conv3(x)
         x = self.conv4(x)
-        print(x.shape)
         return x
 
 
@@ -75,7 +72,6 @@ class DiscriminatorXZ(nn.Module):
 
         # Cut out batch normalization from conv block 1
         self.conv1_x = nn.Sequential(*conv_block(in_channels=3, out_channels=128, kernel_size=4, stride=2)[:2])
-
         self.conv2_x = nn.Sequential(*conv_block(in_channels=128, out_channels=256, kernel_size=4, stride=2))
         self.conv3_x = nn.Sequential(*conv_block(in_channels=256, out_channels=512, kernel_size=4, stride=2))
 
@@ -109,7 +105,6 @@ class DiscriminatorXZ(nn.Module):
 
         xz = torch.squeeze(xz,dim=-1)
         xz = torch.squeeze(xz,dim=-1)
-        print(xz.shape)
 
         return xz
 
@@ -129,11 +124,10 @@ class DiscriminatorXX(nn.Module):
         xx = torch.cat((x,x_), dim=1)
         xx = self.dropout(self.conv1(xx))
         xx = self.dropout(self.conv2(xx))
-        xx = xx.reshape(xx.shape[0], np.prod(xx.shape[1:]))
-        xx = self.fc(xx)
+        intermediate_layer = xx.reshape(xx.shape[0], np.prod(xx.shape[1:]))
+        xx = self.fc(intermediate_layer)
         #xx = xx.squeeze()
-        print(xx.shape)
-        return xx
+        return xx, intermediate_layer
 
 
 class DiscriminatorZZ(nn.Module):
@@ -152,12 +146,14 @@ class DiscriminatorZZ(nn.Module):
         zz = self.leakyReLU(self.dropout(self.fc1(zz)))
         zz = self.leakyReLU(self.dropout(self.fc2(zz)))
         zz = self.fc3(zz)
-
-        print(zz.shape)
         return zz
 
 
 if __name__ == '__main__':
+    """
+    Just for Testing.
+    """
+
     enc = Encoder()
     enc(torch.randn((10, 3, 32, 32)))
 
