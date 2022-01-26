@@ -3,20 +3,22 @@ import torch.nn as nn
 import numpy as np
 
 
-def conv_block(in_channels, out_channels, kernel_size=4, stride=2, padding=1):
+def conv_block(in_channels, out_channels, kernel_size=4, stride=2, padding=1, batch_norm=True):
+    batch_norm = nn.BatchNorm2d(out_channels) if batch_norm else nn.Identity()
     return [nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(kernel_size, kernel_size),
                       padding=padding, stride=(stride, stride)),
-            nn.LeakyReLU(),
-            nn.BatchNorm2d(out_channels)]
+            batch_norm,
+            nn.LeakyReLU()]
 
 
-def deconv_block(in_channels, out_channels, kernel_size=4, stride=2, padding=1, activation='ReLU'):
+def deconv_block(in_channels, out_channels, kernel_size=4, stride=2, padding=1, activation='ReLU', batch_norm=True):
     activation = nn.ReLU() if activation == 'ReLU' else nn.Tanh()
+    batch_norm = nn.BatchNorm2d(out_channels) if batch_norm else nn.Identity()
     return [nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels,
                                   kernel_size=(kernel_size, kernel_size),
                                   padding=(padding, padding), stride=(stride, stride)),
-            activation,
-            nn.BatchNorm2d(out_channels)]
+            batch_norm,
+            activation]
 
 
 class Encoder(nn.Module):
@@ -70,21 +72,26 @@ class DiscriminatorXZ(nn.Module):
         self.latent_dim = latent_dim
         self.dropout = nn.Dropout(p=0.2)
 
-        # Cut out batch normalization from conv block 1
-        self.conv1_x = nn.Sequential(*conv_block(in_channels=3, out_channels=128, kernel_size=4, stride=2)[:2])
-        self.conv2_x = nn.Sequential(*conv_block(in_channels=128, out_channels=256, kernel_size=4, stride=2))
-        self.conv3_x = nn.Sequential(*conv_block(in_channels=256, out_channels=512, kernel_size=4, stride=2))
-
+        self.conv1_x = nn.Sequential(
+            *conv_block(in_channels=3, out_channels=128, kernel_size=4, stride=2, padding=1, batch_norm=False)
+        )
+        self.conv2_x = nn.Sequential(
+            *conv_block(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1)
+        )
+        self.conv3_x = nn.Sequential(
+            *conv_block(in_channels=256, out_channels=512, kernel_size=4, stride=2, padding=1)
+        )
         # Cut out batch normalization from conv blocks for z
-        self.conv1_z = nn.Sequential(*conv_block(in_channels=latent_dim, out_channels=512, kernel_size=1, stride=1,
-                                                 padding=0)[:2])
-        self.conv2_z = nn.Sequential(*conv_block(in_channels=512, out_channels=512, kernel_size=1, stride=1,
-                                                 padding=0)[:2])
-
-        self.conv1_xz = nn.Sequential(*conv_block(in_channels=8704, out_channels=1024, kernel_size=1, stride=1,
-                                                  padding=0)[:2])
-        self.conv2_xz = nn.Sequential(*conv_block(in_channels=1024, out_channels=1, kernel_size=1, stride=1,
-                                                  padding=0)[:2])
+        self.conv1_z = nn.Sequential(
+            *conv_block(in_channels=latent_dim, out_channels=512, kernel_size=1, stride=1, padding=0, batch_norm=False)
+        )
+        self.conv2_z = nn.Sequential(
+            *conv_block(in_channels=512, out_channels=512, kernel_size=1, stride=1, padding=0, batch_norm=False)
+        )
+        self.conv1_xz = nn.Sequential(
+            *conv_block(in_channels=512*4*4+512, out_channels=1024, kernel_size=1, stride=1, padding=0, batch_norm=False)
+        )
+        self.conv2_xz = nn.Conv2d(in_channels=1024, out_channels=1, kernel_size=(1, 1), padding=0, stride=(1, 1))
 
     def forward(self, x, z):
         x = self.conv1_x(x)
@@ -101,7 +108,7 @@ class DiscriminatorXZ(nn.Module):
         xz = torch.cat((x, z), dim=1)
 
         xz = self.dropout(self.conv1_xz(xz))
-        xz = self.dropout(self.conv2_xz(xz))
+        xz = self.conv2_xz(xz)
 
         xz = torch.squeeze(xz,dim=-1)
         xz = torch.squeeze(xz,dim=-1)
@@ -115,8 +122,10 @@ class DiscriminatorXX(nn.Module):
         self.latent_dim = latent_dim
         self.dropout = nn.Dropout(p=0.2)
 
-        self.conv1 = nn.Sequential(*conv_block(6, 64, kernel_size=5, stride=2, padding=2)[:2])
-        self.conv2 = nn.Sequential(*conv_block(64, 128, kernel_size=5, stride=2, padding=2)[:2])
+        # Note: in the original paper padding would be "SAME" (i.e. padding is equal to 2), but here it is 0 due to
+        # better runtime.
+        self.conv1 = nn.Sequential(*conv_block(6, 64, kernel_size=5, stride=2, padding=2, batch_norm=False))
+        self.conv2 = nn.Sequential(*conv_block(64, 128, kernel_size=5, stride=2, padding=2, batch_norm=False))
 
         self.fc = nn.Linear(128*8*8, 1)
 
@@ -124,9 +133,10 @@ class DiscriminatorXX(nn.Module):
         xx = torch.cat((x,x_), dim=1)
         xx = self.dropout(self.conv1(xx))
         xx = self.dropout(self.conv2(xx))
+
         intermediate_layer = xx.reshape(xx.shape[0], np.prod(xx.shape[1:]))
+
         xx = self.fc(intermediate_layer)
-        #xx = xx.squeeze()
         return xx, intermediate_layer
 
 
@@ -137,14 +147,14 @@ class DiscriminatorZZ(nn.Module):
         self.leakyReLU = nn.LeakyReLU()
         self.dropout = nn.Dropout(p=0.2)
 
-        self.fc1 = nn.Linear(200, 64)
+        self.fc1 = nn.Linear(2*latent_dim, 64)
         self.fc2 = nn.Linear(64, 32)
         self.fc3 = nn.Linear(32, 1)
 
     def forward(self, z, z_):
         zz = torch.cat((z,z_), dim=1)
-        zz = self.leakyReLU(self.dropout(self.fc1(zz)))
-        zz = self.leakyReLU(self.dropout(self.fc2(zz)))
+        zz = self.dropout(self.leakyReLU(self.fc1(zz)))
+        zz = self.dropout(self.leakyReLU(self.fc2(zz)))
         zz = self.fc3(zz)
         return zz
 

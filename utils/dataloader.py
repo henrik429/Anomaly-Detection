@@ -48,9 +48,8 @@ def load_csv(csv_path):
                  "urgent", "hot", "num_failed_logins", "logged_in", "num_compromised", "root_shell", "su_attempted",
                  "num_root", "num_file_creations", "num_shells", "num_access_files", "num_outbound_cmds",
                  "is_host_login", "is_guest_login", "count", "srv_count", "serror_rate", "srv_serror_rate",
-                 "rerror_rate",
-                 "srv_rerror_rate", "same_srv_rate", "diff_srv_rate", "srv_diff_host_rate", "dst_host_count",
-                 "dst_host_srv_count", "dst_host_same_srv_rate", "dst_host_diff_srv_rate",
+                 "rerror_rate", "srv_rerror_rate", "same_srv_rate", "diff_srv_rate", "srv_diff_host_rate",
+                 "dst_host_count", "dst_host_srv_count", "dst_host_same_srv_rate", "dst_host_diff_srv_rate",
                  "dst_host_same_src_port_rate", "dst_host_srv_diff_host_rate", "dst_host_serror_rate",
                  "dst_host_srv_serror_rate", "dst_host_rerror_rate", "dst_host_srv_rerror_rate", "label"]
 
@@ -65,10 +64,19 @@ def load_csv(csv_path):
 
     # As in the Paper said: "Due to the high proportion of outliers
     # in the KDD dataset, “normal” data are treated as anomalies [...].
-    labels[labels != 'normal.'] = 0.0  # zero means normal
-    labels[labels == 'normal.'] = 1.0  # one means anomalous
+    # labels[labels != 'normal.'] = 0.0  # zero means normal
 
-    csv['label'] = labels
+    binary_labels = np.zeros(labels.shape[0])  # zero means normal
+    binary_labels[labels == 'normal.'] = 1.0  # one means anomalous
+
+    csv['label'] = binary_labels
+
+    # Rearrange position of column label
+    new_columns = csv.columns.to_list()
+    new_columns.remove('label')
+    new_columns.append('label')
+
+    csv = csv.reindex(columns=new_columns)
 
     return csv
 
@@ -78,7 +86,7 @@ def Dataloader(dataset, normal_class=0, batch_size=32):
     Reads image folder / dataset and returns data in batches.
     """
     if dataset == "CIFAR10":
-        print("Load image data CIFAR-10...")
+        print(f"Load image data CIFAR-10 of class {normal_class}...")
         trainset = ds.CIFAR10(root=f'{os.getcwd()}/data/train',
                               train=True,
                               download=True)
@@ -92,7 +100,7 @@ def Dataloader(dataset, normal_class=0, batch_size=32):
         normal_data = train_data[labels == normal_class]
         normal_labels = labels[labels == normal_class]
 
-        print(f"After discarding anomalous classes except normal class {normal_class}, "
+        print(f"After discarding anomalous classes (except normal class {normal_class}), "
               f"{normal_data.shape[0]} of {train_data.shape[0]} "
               f"images ({normal_data.shape[0]/train_data.shape[0]*100}%) remain for training.")
 
@@ -116,9 +124,6 @@ def Dataloader(dataset, normal_class=0, batch_size=32):
 
         transform = Compose([ToTensor(), normalize])
 
-        # Calculate number of anomalous samples for testing
-        num_anomalous_sample = np.where(labels != normal_class)[0].shape[0]
-
     elif dataset == 'KDDCup':
         print("Load tabular data KDDCup99...")
 
@@ -135,24 +140,30 @@ def Dataloader(dataset, normal_class=0, batch_size=32):
         # 25 % of the train data should be used for validation
         x_train, x_valid, y_train, y_valid = train_test_split(x, y, test_size=0.25, random_state=42)
 
-        x_train = x_train.astype(np.float32)
-        x_test = x_test.astype(np.float32)
-        x_valid = x_valid.astype(np.float32)
-        y_train = y_train.astype(np.float32)
-        y_test = y_test.astype(np.float32)
-        y_valid = y_valid.astype(np.float32)
+        # Exclude as anomalous defined samples
+        x_train = x_train[y_train != 1]
+        y_train = y_train[y_train != 1]
+        x_valid = x_valid[y_valid != 1]
+        y_valid = y_valid[y_valid != 1]
 
-        transform = Compose([ToTensor()])
+        x_train = torch.Tensor(x_train.astype(np.float32))
+        x_test = torch.Tensor(x_test.astype(np.float32))
+        x_valid = torch.Tensor(x_valid.astype(np.float32))
+        y_train = torch.Tensor(y_train.astype(np.float32))
+        y_test = torch.Tensor(y_test.astype(np.float32))
+        y_valid = torch.Tensor(y_valid.astype(np.float32))
 
-        # Calculate number of anomalous samples for testing
-        num_anomalous_sample = np.where(y_test == 1.0)[0].shape[0]
+        transform = None
 
-        print(f'Proportion of as anomalous defined samples in train set: '
-              f'{np.where(y_train == 1.0)[0].shape[0] / y_train.shape[0] * 100}%')
-        print(f'Proportion of as anomalous defined samples in test set: '
-              f'{num_anomalous_sample / y_test.shape[0] * 100}%')
     else:
-        raise "Requested dataset is not available."
+        raise NameError("Requested dataset is not available.")
+
+    # Calculate number of anomalous samples for testing
+    num_anomalous_sample = np.where(y_test == 1.0)[0].shape[0]
+
+    print(f'Proportion of as anomalous defined samples in test set: '
+          f'{np.round(num_anomalous_sample / y_test.shape[0] * 100, decimals=4)}%'
+          f' (In Total: {num_anomalous_sample} of {y_test.shape[0]} samples)')
 
     train_ds = DataSet(x_train, y_train, transform=transform)
     train_loader = torch.utils.data.DataLoader(train_ds,

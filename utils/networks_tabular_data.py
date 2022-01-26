@@ -56,7 +56,7 @@ class DiscriminatorXZ(nn.Module):
         z = self.dropout(self.leakyReLU(self.fc_z(z)))
 
         xz = torch.cat((x, z), dim=1)
-        xz = self.sigmoid(self.fc2(self.dropout(self.leakyReLU(self.fc1(xz)))))
+        xz = self.fc2(self.dropout(self.leakyReLU(self.fc1(xz))))
         return xz
 
 
@@ -74,7 +74,7 @@ class DiscriminatorXX(nn.Module):
     def forward(self, x, rec_x):
         out = torch.cat((x, rec_x), dim=1)
         intermediate_layer = self.dropout(self.leakyReLU(self.fc1(out)))
-        out = self.dropout(self.sigmoid(self.fc2(intermediate_layer)))
+        out = self.dropout(self.fc2(intermediate_layer))
         return out, intermediate_layer
 
 
@@ -92,7 +92,7 @@ class DiscriminatorZZ(nn.Module):
     def forward(self, z, rec_z):
         out = torch.cat((z, rec_z), dim=1)
         out = self.dropout(self.leakyReLU(self.fc1(out)))
-        out = self.sigmoid(self.dropout(self.fc2(out)))
+        out = self.dropout(self.fc2(out))
         return out
 
 
