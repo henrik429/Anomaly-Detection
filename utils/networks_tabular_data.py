@@ -1,3 +1,7 @@
+"""
+This file reproduces the architecture of the ALAD paper for input of tabular data.
+"""
+
 import torch
 import torch.nn as nn
 
@@ -6,6 +10,7 @@ class Encoder(nn.Module):
     """
     An encoder that down-sample the input x to latent representation z.
     """
+
     def __init__(self, latent_dim=32):
         super().__init__()
         self.latent_dim = latent_dim
@@ -22,6 +27,7 @@ class Decoder(nn.Module):
     """
     A Decoder representing the Generator that up-sample the latent representation z to sample x.
     """
+
     def __init__(self, latent_dim=32):
         super().__init__()
         self.latent_dim = latent_dim
@@ -86,7 +92,7 @@ class DiscriminatorZZ(nn.Module):
         self.sigmoid = nn.Sigmoid()
         self.dropout = nn.Dropout(p=0.2)
 
-        self.fc1 = nn.Linear(latent_dim*2, 32)
+        self.fc1 = nn.Linear(latent_dim * 2, 32)
         self.fc2 = nn.Linear(32, 1)
 
     def forward(self, z, rec_z):
@@ -95,23 +101,3 @@ class DiscriminatorZZ(nn.Module):
         out = self.dropout(self.fc2(out))
         return out
 
-
-if __name__ == '__main__':
-    """
-    Just for Testing.
-    """
-
-    enc = Encoder()
-    enc(torch.randn((10, 121)))
-
-    dec = Decoder()
-    dec(torch.randn((10, 32)))
-
-    dis_xz = DiscriminatorXZ()
-    dis_xz(torch.randn((10, 121)), torch.randn((10, 32)))
-
-    dis_xx = DiscriminatorXX()
-    dis_xx(torch.randn((10, 121)), torch.randn((10, 121)))
-
-    dis_zz = DiscriminatorZZ()
-    dis_zz(torch.randn((10, 32)), torch.randn((10, 32)))

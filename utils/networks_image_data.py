@@ -1,37 +1,77 @@
+"""
+This file reproduces the architecture of the ALAD paper for input of image data.
+"""
+
 import torch
 import torch.nn as nn
 import numpy as np
 
 
-def conv_block(in_channels, out_channels, kernel_size=4, stride=2, padding=1, batch_norm=True):
+def conv_block(
+    in_channels, out_channels, kernel_size=4, stride=2, padding=1, batch_norm=True
+):
     batch_norm = nn.BatchNorm2d(out_channels) if batch_norm else nn.Identity()
-    return [nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(kernel_size, kernel_size),
-                      padding=padding, stride=(stride, stride)),
-            batch_norm,
-            nn.LeakyReLU()]
+    return [
+        nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=(kernel_size, kernel_size),
+            padding=padding,
+            stride=(stride, stride),
+        ),
+        batch_norm,
+        nn.LeakyReLU(),
+    ]
 
 
-def deconv_block(in_channels, out_channels, kernel_size=4, stride=2, padding=1, activation='ReLU', batch_norm=True):
-    activation = nn.ReLU() if activation == 'ReLU' else nn.Tanh()
+def deconv_block(
+    in_channels,
+    out_channels,
+    kernel_size=4,
+    stride=2,
+    padding=1,
+    activation="ReLU",
+    batch_norm=True,
+):
+    activation = nn.ReLU() if activation == "ReLU" else nn.Tanh()
     batch_norm = nn.BatchNorm2d(out_channels) if batch_norm else nn.Identity()
-    return [nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels,
-                                  kernel_size=(kernel_size, kernel_size),
-                                  padding=(padding, padding), stride=(stride, stride)),
-            batch_norm,
-            activation]
+    return [
+        nn.ConvTranspose2d(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=(kernel_size, kernel_size),
+            padding=(padding, padding),
+            stride=(stride, stride),
+        ),
+        batch_norm,
+        activation,
+    ]
 
 
 class Encoder(nn.Module):
     """
     An encoder that down-sample the input x to latent representation z.
     """
+
     def __init__(self, latent_dim=100):
         super().__init__()
 
-        self.conv1 = nn.Sequential(*conv_block(in_channels=3, out_channels=128, kernel_size=4, stride=2))
-        self.conv2 = nn.Sequential(*conv_block(in_channels=128, out_channels=256, kernel_size=4, stride=2))
-        self.conv3 = nn.Sequential(*conv_block(in_channels=256, out_channels=512, kernel_size=4, stride=2))
-        self.conv4 = nn.Conv2d(in_channels=512, out_channels=latent_dim, kernel_size=(4, 4), padding=0, stride=(1, 1))
+        self.conv1 = nn.Sequential(
+            *conv_block(in_channels=3, out_channels=128, kernel_size=4, stride=2)
+        )
+        self.conv2 = nn.Sequential(
+            *conv_block(in_channels=128, out_channels=256, kernel_size=4, stride=2)
+        )
+        self.conv3 = nn.Sequential(
+            *conv_block(in_channels=256, out_channels=512, kernel_size=4, stride=2)
+        )
+        self.conv4 = nn.Conv2d(
+            in_channels=512,
+            out_channels=latent_dim,
+            kernel_size=(4, 4),
+            padding=0,
+            stride=(1, 1),
+        )
         self.latent_dim = latent_dim
 
     def forward(self, x):
@@ -47,14 +87,35 @@ class Decoder(nn.Module):
     """
     A Decoder representing the Generator that up-sample the latent representation z to sample x.
     """
+
     def __init__(self, latent_dim=100):
         super().__init__()
 
-        self.conv1 = nn.Sequential(*deconv_block(in_channels=latent_dim, out_channels=512, kernel_size=4, stride=2, padding=0))
-        self.conv2 = nn.Sequential(*deconv_block(in_channels=512, out_channels=256, kernel_size=4, stride=2))
-        self.conv3 = nn.Sequential(*deconv_block(in_channels=256, out_channels=128, kernel_size=4, stride=2))
-        self.conv4 = nn.Sequential(*deconv_block(in_channels=128, out_channels=3, kernel_size=4, padding=1, stride=2,
-                                                 activation="Tanh"))
+        self.conv1 = nn.Sequential(
+            *deconv_block(
+                in_channels=latent_dim,
+                out_channels=512,
+                kernel_size=4,
+                stride=2,
+                padding=0,
+            )
+        )
+        self.conv2 = nn.Sequential(
+            *deconv_block(in_channels=512, out_channels=256, kernel_size=4, stride=2)
+        )
+        self.conv3 = nn.Sequential(
+            *deconv_block(in_channels=256, out_channels=128, kernel_size=4, stride=2)
+        )
+        self.conv4 = nn.Sequential(
+            *deconv_block(
+                in_channels=128,
+                out_channels=3,
+                kernel_size=4,
+                padding=1,
+                stride=2,
+                activation="Tanh",
+            )
+        )
         self.latent_dim = latent_dim
 
     def forward(self, z):
@@ -73,25 +134,63 @@ class DiscriminatorXZ(nn.Module):
         self.dropout = nn.Dropout(p=0.2)
 
         self.conv1_x = nn.Sequential(
-            *conv_block(in_channels=3, out_channels=128, kernel_size=4, stride=2, padding=1, batch_norm=False)
+            *conv_block(
+                in_channels=3,
+                out_channels=128,
+                kernel_size=4,
+                stride=2,
+                padding=1,
+                batch_norm=False,
+            )
         )
         self.conv2_x = nn.Sequential(
-            *conv_block(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1)
+            *conv_block(
+                in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1
+            )
         )
         self.conv3_x = nn.Sequential(
-            *conv_block(in_channels=256, out_channels=512, kernel_size=4, stride=2, padding=1)
+            *conv_block(
+                in_channels=256, out_channels=512, kernel_size=4, stride=2, padding=1
+            )
         )
         # Cut out batch normalization from conv blocks for z
         self.conv1_z = nn.Sequential(
-            *conv_block(in_channels=latent_dim, out_channels=512, kernel_size=1, stride=1, padding=0, batch_norm=False)
+            *conv_block(
+                in_channels=latent_dim,
+                out_channels=512,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                batch_norm=False,
+            )
         )
         self.conv2_z = nn.Sequential(
-            *conv_block(in_channels=512, out_channels=512, kernel_size=1, stride=1, padding=0, batch_norm=False)
+            *conv_block(
+                in_channels=512,
+                out_channels=512,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                batch_norm=False,
+            )
         )
         self.conv1_xz = nn.Sequential(
-            *conv_block(in_channels=512*4*4+512, out_channels=1024, kernel_size=1, stride=1, padding=0, batch_norm=False)
+            *conv_block(
+                in_channels=512 * 4 * 4 + 512,
+                out_channels=1024,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                batch_norm=False,
+            )
         )
-        self.conv2_xz = nn.Conv2d(in_channels=1024, out_channels=1, kernel_size=(1, 1), padding=0, stride=(1, 1))
+        self.conv2_xz = nn.Conv2d(
+            in_channels=1024,
+            out_channels=1,
+            kernel_size=(1, 1),
+            padding=0,
+            stride=(1, 1),
+        )
 
     def forward(self, x, z):
         x = self.conv1_x(x)
@@ -110,8 +209,8 @@ class DiscriminatorXZ(nn.Module):
         xz = self.dropout(self.conv1_xz(xz))
         xz = self.conv2_xz(xz)
 
-        xz = torch.squeeze(xz,dim=-1)
-        xz = torch.squeeze(xz,dim=-1)
+        xz = torch.squeeze(xz, dim=-1)
+        xz = torch.squeeze(xz, dim=-1)
 
         return xz
 
@@ -122,15 +221,18 @@ class DiscriminatorXX(nn.Module):
         self.latent_dim = latent_dim
         self.dropout = nn.Dropout(p=0.2)
 
-        # Note: in the original paper padding would be "SAME" (i.e. padding is equal to 2), but here it is 0 due to
-        # better runtime.
-        self.conv1 = nn.Sequential(*conv_block(6, 64, kernel_size=5, stride=2, padding=2, batch_norm=False))
-        self.conv2 = nn.Sequential(*conv_block(64, 128, kernel_size=5, stride=2, padding=2, batch_norm=False))
+        # Note: in the original paper padding would be "SAME" (i.e. padding is equal to 2).
+        self.conv1 = nn.Sequential(
+            *conv_block(6, 64, kernel_size=5, stride=2, padding=2, batch_norm=False)
+        )
+        self.conv2 = nn.Sequential(
+            *conv_block(64, 128, kernel_size=5, stride=2, padding=2, batch_norm=False)
+        )
 
-        self.fc = nn.Linear(128*8*8, 1)
+        self.fc = nn.Linear(128 * 8 * 8, 1)
 
     def forward(self, x, x_):
-        xx = torch.cat((x,x_), dim=1)
+        xx = torch.cat((x, x_), dim=1)
         xx = self.dropout(self.conv1(xx))
         xx = self.dropout(self.conv2(xx))
 
@@ -147,34 +249,13 @@ class DiscriminatorZZ(nn.Module):
         self.leakyReLU = nn.LeakyReLU()
         self.dropout = nn.Dropout(p=0.2)
 
-        self.fc1 = nn.Linear(2*latent_dim, 64)
+        self.fc1 = nn.Linear(2 * latent_dim, 64)
         self.fc2 = nn.Linear(64, 32)
         self.fc3 = nn.Linear(32, 1)
 
     def forward(self, z, z_):
-        zz = torch.cat((z,z_), dim=1)
+        zz = torch.cat((z, z_), dim=1)
         zz = self.dropout(self.leakyReLU(self.fc1(zz)))
         zz = self.dropout(self.leakyReLU(self.fc2(zz)))
         zz = self.fc3(zz)
         return zz
-
-
-if __name__ == '__main__':
-    """
-    Just for Testing.
-    """
-
-    enc = Encoder()
-    enc(torch.randn((10, 3, 32, 32)))
-
-    dec = Decoder()
-    dec(torch.randn((10, 100)))
-
-    dis_xz = DiscriminatorXZ()
-    dis_xz(torch.randn((10, 3, 32, 32)), torch.randn((10, 100)))
-
-    dis_xx = DiscriminatorXX()
-    dis_xx(torch.randn((10, 3, 32, 32)), torch.randn((10, 3, 32, 32)))
-
-    dis_zz = DiscriminatorZZ()
-    dis_zz(torch.randn((10, 100)), torch.randn((10, 100)))
