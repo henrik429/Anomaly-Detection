@@ -4,28 +4,26 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 This repository reproduces the content of the
-Paper [Adversarially Learned Anomaly Detection](https://arxiv.org/pdf/1812.02288.pdf) (ALAD).
-
-
-
+Paper [Adversarially Learned Anomaly Detection](https://arxiv.org/pdf/1812.02288.pdf) (ALAD) [[1](https://arxiv.org/pdf/1812.02288.pdf)].
 
 ## Anomaly Detection
+
 As the name said, anomaly detection is the identification of anomalies in data. 
 Instances of data are considered as anomalies, if they differ significantly from the
 majority of the data and therefore, raise suspicions. 
-Thus, they are also called outliers, noise or novelties.
+They are also called outliers, noise or novelties.
 So, anomaly detection is the identification of rare items, events or observations
-[[1](https://avinetworks.com/glossary/anomaly-detection/),
-[2](https://en.wikipedia.org/wiki/Anomaly_detection),
-[3](https://nix-united.com/blog/machine-learning-for-anomaly-detection-in-depth-overview/)].
+[[6](https://avinetworks.com/glossary/anomaly-detection/),
+[7](https://en.wikipedia.org/wiki/Anomaly_detection),
+[8](https://nix-united.com/blog/machine-learning-for-anomaly-detection-in-depth-overview/)].
 
 In context of Cybersecurity, applications of anomaly detection can vary widely. 
 It can be used to detect 
 unauthorized access attempts or suspicious activity such as unusual types of 
 requests. It is applicable for 
 fraud or intrusion detection and can also prevent sensitive data leaks 
-[[2](https://en.wikipedia.org/wiki/Anomaly_detection), 
-[3](https://nix-united.com/blog/machine-learning-for-anomaly-detection-in-depth-overview/)].
+[[7](https://en.wikipedia.org/wiki/Anomaly_detection), 
+[8](https://nix-united.com/blog/machine-learning-for-anomaly-detection-in-depth-overview/)].
 
 There are three main classes of anomaly detection techniques: unsupervised, semi-supervised, and supervised. 
 This repository refers to an unsupervised approach for anomaly detection. One of the most important
@@ -33,15 +31,15 @@ assumptions is here that the dataset used for the learning purpose contains main
 only a small partition of the dataset is malicious and abnormal. Thus, unsupervised 
 anomaly detection algorithms deem collections of frequent, similar instances to be
 normal and identify infrequent data groups as malicious
-[[1](https://avinetworks.com/glossary/anomaly-detection/)].
+[[6](https://avinetworks.com/glossary/anomaly-detection/)].
 
 ## Introduction to ALAD
 The ALAD model belongs to such unsupervised anomaly detection algorithms. 
-Its method is predicated on bi-directional GANs [[4](https://arxiv.org/pdf/1605.09782v7.pdf)],
+Its method is predicated on bi-directional GANs [[2](https://arxiv.org/pdf/1605.09782v7.pdf)],
 i.e. it consists not only of a generator and discriminator, but also an encoder. The encoder represents the 
 opposite operation to the generator. It transforms samples from data space to 
-latent space, vice verca the generator. After training the model in an 
-unsupervised manner, ALAD outputs scores for each data sample by utilizing reconstructions errors, which indicate whether a data sample is anomalous or not. 
+latent space, vice versa the generator. After training the model in an 
+unsupervised manner, the ALAD model outputs scores for each data sample by utilizing reconstructions errors, which indicate whether a data sample is anomalous or not. 
 Furthermore, ALAD ensures cycle-consistency between data and latent space and uses methods to 
 stabilize GAN-training. By doing so, the ALAD model accomplishes state-of-the-art 
 performance on a range of image and tabular datasets. This repository was able to 
@@ -49,35 +47,44 @@ reproduce and validate these results.
 
 ## ALAD architecture
 
-In GANs, the generator receives random variables, _z_, sampled from a latent Gaussian distribution as input
+In GANs [[9](https://arxiv.org/pdf/1406.2661.pdf)], the generator receives random variables, _z_, sampled from a latent Gaussian distribution as input
 and tries to generate data, _X_, resembling data space that should be learned. In contrast, the discriminator tries to
 distinguish between real data samples and those produced by the generator. During training the generator tries 
 to better fool the discriminator and the discriminator to better detect real and fake samples.
 
 The architecture of the ALAD model is expanded by a few networks so that it comprises 
 a generator _G_, an encoder _E_ and three discriminators _D<sub>ZZ</sub>_,  _D<sub>XZ</sub>_ and  _D<sub>XX</sub>_. 
-As previously mentioned, Encoder learns to invert the generator which maps data samples _X_ 
+As mentioned, encoder learns to invert the generator which maps data samples _X_ 
 to the latent space _z_ during training. Both are not directly connected and they never see their outputs.
-Each discriminator obtains as an input a two-dimensional tuple,  _D<sub>XZ</sub>_ at the first position a data sample and at the second sition a latent variable, _D<sub>XX</sub>_ at both positions samples from data space and _D<sub>ZZ</sub>_ at both positions variables from latent space. 
+Each discriminator obtains as input a two-dimensional tuple,  _D<sub>XZ</sub>_ at the first position a data sample and 
+at the second position a latent variable, _D<sub>XX</sub>_ 
+at both positions samples from data space and _D<sub>ZZ</sub>_
+ at both positions variables from latent space. 
 The discriminator _D<sub>XZ</sub>_ is similar to the discriminator of 
-GAN. It not only distinguish between real and fake sample, but also between _z_ and _E(X)_. So, the generator learns to infer the data space and the encoder to project the data sample into the latent space. 
+GAN. It not only distinguish between real and fake sample, but 
+also between _z_ and _E(X)_.
+ So, the generator learns to infer the data space and the encoder to project a
+  data sample into the latent space. 
 The discriminator _D<sub>XX</sub>_ learns to recognize if the second input is equal to the first. The same applies for _D<sub>ZZ</sub>_, only with different input.
 
 <p align="center">
-<img src="pictures/ALAD_architecture.png" width="500" alt="Logo"/>
+<img src="pictures/ALAD_architecture.png" width="500"/>
 
 ## Stabilizing GAN-Training and objective of ALAD
 
-The aim of this GAN is that cycle-consistency is achieved, i.e. the reconstruction _G_(_E_(_X_)) is almost equal to original sample _X_ in order to use it for athe reconstruction-based anomaly detection method. This is accomplished by incorporating three terms into the objective which is defined as follows:
+The aim of this GAN is that cycle-consistency is achieved, 
+i.e. the reconstruction _G_(_E_(_X_)) is almost equal to original 
+sample _X_ in order to use it for the reconstruction-based anomaly 
+detection method. This is accomplished by incorporating three terms into the objective which is defined as follows:
 
 <p align="center">
 <img src="http://www.sciweavers.org/tex2img.php?eq=min_%7BG%2CE%7D%20max_%7BD_%7Bxz%7D%2C%20D_%7Bxx%7D%2CD_%7Bzz%7D%7D%20%20%20V%20%28D_%7Bxz%7D%2C%20D_%7Bxx%7D%2CD_%7Bzz%7D%2C%20E%2C%20G%29%20%3D%0AV%20%28D_%7Bxz%7D%2C%20E%2C%20G%29%20%2B%20V%20%28D_%7Bxx%7D%2C%20E%2C%20G%29%20%2B%20V%20%28D_%7Bzz%7D%2C%20E%2C%20G%29&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="min_{G,E} max_{D_{xz}, D_{xx},D_{zz}}   V (D_{xz}, D_{xx},D_{zz}, E, G) =V (D_{xz}, E, G) + V (D_{xx}, E, G) + V (D_{zz}, E, G)" width="694" height="19" />
 
-The first term is known from the BiGAN [[4](https://arxiv.org/pdf/1605.09782v7.pdf)] and defined as follows:
+The first term is known from the BiGAN [[2](https://arxiv.org/pdf/1605.09782v7.pdf)] and defined as follows:
 
 <img src="http://www.sciweavers.org/tex2img.php?eq=V%20%28D_%7Bxz%7D%2C%20E%2C%20G%29%20%3D%20%20%5Cmathbb%7BE%7D_%7Bx%20%5Csim%20p_x%7D%20%5Blog%20D_%7Bxz%7D%20%28x%2C%20E%28x%29%29%5D%0A%2B%20%5Cmathbb%7BE%7D_%7Bz%20%5Csim%20p_z%7D%20%5B1%20-%20log%20D_%7Bxz%7D%20%28G%28z%29%2C%20z%29%5D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="V (D_{xz}, E, G) =  \mathbb{E}_{x \sim p_x} [log D_{xz} (x, E(x))]+ \mathbb{E}_{z \sim p_z} [1 - log D_{xz} (G(z), z)]" width="614" height="21" />
 
- The second term was established by the ALICE Paper [[5](https://arxiv.org/pdf/1709.01215.pdf)] and is defined as follows:
+ The second term was established by the ALICE Paper [[3](https://arxiv.org/pdf/1709.01215.pdf)] and is defined as follows:
 
  <img src="http://www.sciweavers.org/tex2img.php?eq=V%20%28D_%7Bxx%7D%2C%20E%2C%20G%29%20%3D%20%20%5Cmathbb%7BE%7D_%7Bx%20%5Csim%20p_x%7D%20%5Blog%20D_%7Bxx%7D%20%28x%2C%20x%29%5D%0A%2B%20%5Cmathbb%7BE%7D_%7Bx%20%5Csim%20p_x%7D%20%5B1%20-%20log%20D_%7Bxx%7D%20%28x%2C%20G%28E%28x%29%29%29%5D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="V (D_{xx}, E, G) =  \mathbb{E}_{x \sim p_x} [log D_{xx} (x, x)]+ \mathbb{E}_{x \sim p_x} [1 - log D_{xx} (x, G(E(x)))]" width="619" height="21" />
 
@@ -92,22 +99,29 @@ By employing the discriminator _D<sub>XX</sub>_, it is achieved that the encoder
 
 The ALAD model is a reconstruction-based anomaly detection technique which decides whether a sample is anomalous based on the quality of the reconstruction.
 By reaching cycle-consistency it is ensured that the ALAD model can learn to encode and reconstruct samples from data space and this is needed to evaluate how far a sample is from its reconstruction. If the model is exclusively trained with normal samples, then we expect that samples from the normal distribution can be accurately reconstructed whereas anomalous samples will likely be poorly reconstructed. 
-At last, the distance between original and reconstructed samples has to be determined. 
+Subsequently, the distance between original and reconstructed samples has to be determined. 
 In their own ablation studies it turned out that utilizing the Euclidean distance between the original samples and their reconstructions in data space performed not best. Instead
-the output before the logits (i.e. before the last layer) of the discriminator _D<sub>XX</sub>_ is taken, where once the input is twice the sample itself and once the sample and the corresponding reconstruction. Then, a L1 reconstruction error between the two outputs which is used as an anomaly score.
-Therefore, after training the model on normal data, only _G_, _E_ and _D<sub>XX</sub>_ is needed for the anomaly detection task and can be described as follows:
+the output before the logits (i.e. before the last layer) of the discriminator _D<sub>XX</sub>_ is taken, 
+where once the input is twice the sample itself and once the sample 
+and the corresponding reconstruction. Then, a L1 loss
+is computed between these two outputs and used as an anomaly score.
+After training the model on normal data, only _G_, _E_ and _D<sub>XX</sub>_ is needed for the anomaly detection task and
+ the procedure of the score calculation can be described as follows:
 
 <img src="pictures/ALAD_algorithm.png" width="400"/>
 
 ## Experiment Setup
 
-This repository reproduces the results from the tabular dataset [_KDDCup99_](https://archive.ics.uci.edu/ml/index.php) and the image dataset [_CIFAR-10 dataset_](https://www.cs.toronto.edu/~kriz/learning-features-2009-TR.pdf).
+This repository reproduces the results from the tabular dataset [_KDDCup99_](https://archive.ics.uci.edu/ml/index.php)
+ [[3](https://arxiv.org/pdf/1709.01215.pdf)] and the image dataset
+  [_CIFAR-10 dataset_](https://www.cs.toronto.edu/~kriz/learning-features-2009-TR.pdf)
+  [[5](https://www.cs.toronto.edu/~kriz/learning-features-2009-TR.pdf)] .
 For each dataset, 80% of the whole official dataset is used for training and the
-remaining 20% as are kept as test set. 25% from the training set are taken for a validation set. Anomalous samples from both training and validation sets are discarded.
+remaining 20% are kept as test set. 25% from the training set are taken for a validation set. Anomalous samples from both training and validation sets are discarded.
 
 ### KDDCup99 dataset
 
-The KDDCup99 dataset is a network intrusion dataset where i.a. features are _num\_failed\_logins_, _num\_access\_files_ or _num\_file\_creations_. 
+The KDDCup99 dataset is a network intrusion dataset where i.a. features are _num\_failed\_logins_, _num\_access\_files_ or _su\_attempted_. 
 It contains samples of 41 dimensions, where 34 of them are continuous
 and 7 are categorical. Categorical features were encoded to one-hot representations resulting in a total of 121 features. Due to the high proportion of outliers in the KDD dataset, "normal" data samples are treated as anomalies. 20% of samples with the highest anomaly scores A(x) are classified as anomalies (positive class).
 
@@ -122,8 +136,18 @@ My experimental results can be looked up at https://git.imp.fu-berlin.de/henris0
 
 ### KDDCup99 dataset
 
-Both precision-recall plots result from the reproduced evaluation. The left one is the precision-recall curve where the scores are taken as they were outputed from the score function. 
-For the right plot a threshold was found based on the number of anomalous samples which is for the KDDCup99 dataset around 20%. So, those score becomes the threshold where around 20% of the scores are bigger than that score, i.e. if they are beneath the threshold they were considered as normal and above as anomalous since __the higher the value the higher the likelihood of an anomalous sample__. Finally, the scores were transformed into binary scores where anomalous samples were represented as ones and normal ones as zeros.
+Both precision-recall plots result from the reproduced evaluation. 
+The left one is the precision-recall curve where the scores are taken as they
+ were outputed from the score function. 
+ For the right plot binary scores were used to create the precision recall curve.
+ To assign the scores the values _zeros_ and _ones_, representing anomalous and
+  normal samples, 
+ respectively, a threshold is required whicih is found by the number of 
+ anomalous samples which is for the KDDCup99 dataset around 20%. So,
+  those score becomes the threshold where around 20% of the scores are bigger
+   than that score. Therefore, scores beneath the threshold were considered 
+   as normal and above as anomalous __since the worse the reconstruction the higher
+   the score__.
 
 <img src="pictures/KDDmyPR.png" width="400"/>
 
@@ -138,20 +162,67 @@ Also, the results of the reproduction are highly comparable to those of the ALAD
 
 ### CIFAR-10 dataset
 
-The reproduces results can be seen on the left bar plot and those of the Paper, the light blue column labeled as _ALAD_, in the right bar plot.
-The reproduced results 
-The classes _plane, bird, deer, frog and ship_ performed best for the reproduced results as well as in the Paper whereas _car, cat, dog, horse and truck_ achieved worst result for the reproduced as well as in the Pape. 
-
-<img src="pictures/CifarMyBars.png" alt=lol width="400"/>
+The reproduced results can be seen on the left bar plot and those of the Paper 
+ in the right bar plot (the light blue  column labeled as _ALAD_). 
+The reproduced results accomplished an AUC for class _plane_ of ca. 0.69,
+for _car_ ca. 0.5, for _bird_ ca. 0.67, for _cat_ ca. 0.55, for _deer_ ca. 0.69,
+ for _dog_ ca. 0.55, for _frog_ ca 0.75, for _horse_ ca. 0.52, for _ship_ ca.
+0.78 and for _truck_ ca. 0.44.
+In contrast, the results of the Paper attained an AUC for class _plane_ of
+ ca. 0.68, for _car_ ca. 0.46, for _bird_ ca. 0.63, for _cat_ ca. 0.62, 
+ for _deer_ ca. 0.67, for _dog_ ca. 0.53, for _frog_ ca 0.78, 
+ for _horse_ ca. 0.52, for _ship_ ca. 0.77 and for _truck_ ca. 0.42.
+ It can be seen that the five best classes were _plane, bird, deer, frog and ship_
+  and the five worst _car, cat, dog, horse and truck_
+   for the reproduced results as well as for the Paper. Furthermore,
+  the outcomes of the reproduction and the Paper are very close and they 
+  deviate just at the second decimal place.
+  Even in most of the classes
+  (_plane_, _car_, _bird_, _deer_, _dog_, _horse_, _ship_ and _truck_)
+  the reproduction was also able to exceed those of the Paper.
+ 
+<img src="pictures/CifarMyBars.png" width="400"/>
 
 <img src="pictures/PaperBarCIFAR.png" width="400"/>
 
 
 ## Conclusion
 
+- Anomaly detection is the identification of rare items, events or observations by differing significantly from the majority.
+- Being able to __learn the distribution of the normal data__ by e.g. the ALAD model is key for the anomaly detection task.
+- __Normal samples__ should be __accurately reconstructed__ whereas __anomalous samples__ will likely be __poorly reconstructed__.
+- An __anomaly score__ is used to determine whether a sample is anomalous or stems from the normal distribution
+by measuring the distance between original sample and reconstruction.
+- This repository was able to validate the outcomes of the Paper for two selected datasets and could even excel the results in parts.
 
 ## Resources
 
+[[1](https://arxiv.org/pdf/1812.02288.pdf)] Zenati, Houssam et al. “Adversarially Learned Anomaly Detection.” 2018 IEEE International Conference on Data Mining (ICDM) (2018): 727-736.
+
+[[2](https://arxiv.org/pdf/1605.09782v7.pdf)] J. Donahue, P. Krähenbühl, and T. Darrell, “Adversarial feature
+learning,” International Conference on Learning Representa-
+tions, 2017.
+
+[[3](https://arxiv.org/pdf/1709.01215.pdf)] C. Li, H. Liu, C. Chen, Y. Pu, L. Chen, R. Henao, and L. Carin,
+“Alice: Towards understanding adversarial learning for joint
+distribution matching,” in Advances in Neural Information
+Processing Systems 30, 2017, pp. 5495–5503.
+
+[[4](https://archive.ics.uci.edu/ml/index.php)] A. Krizhevsky, “Learning multiple layers of features from tiny
+images,” Technical Report, 2012
+
+[[5](https://www.cs.toronto.edu/~kriz/learning-features-2009-TR.pdf)]  M. Lichman, “UCI machine learning repository,” 2013.
+\[Online\].
+
+[[6](https://avinetworks.com/glossary/anomaly-detection/)] https://avinetworks.com/glossary/anomaly-detection/.
+
+[[7](https://en.wikipedia.org/wiki/Anomaly_detection)] https://en.wikipedia.org/wiki/Anomaly_detection.
+ 
+[[8](https://nix-united.com/blog/machine-learning-for-anomaly-detection-in-depth-overview/)] 
+https://nix-united.com/blog/machine-learning-for-anomaly-detection-in-depth-overview/
+
+[[9](https://arxiv.org/pdf/1406.2661.pdf)]
+Goodfellow, I.J., Pouget-Abadie, J., Mirza, M., Xu, B., Warde-Farley, D., Ozair, S., Courville, A.C., & Bengio, Y. (2014). Generative Adversarial Nets. NIPS.
 
 ### Appendix
 
@@ -159,6 +230,14 @@ The classes _plane, bird, deer, frog and ship_ performed best for the reproduced
 
 The presentation slides are located at https://git.imp.fu-berlin.de/henris07/anomalydetection/-/blob/main/cybersecurity_AI_slides.pdf.
 
+
+The architecture of the KDDCup99 dataset is defined as follows:
+
+<img src="pictures/KDDCup_architecture.png" width="400"/>
+
+The architecture of the image datasets are defined as follows:
+
+<img src="pictures/image_architecture.png" width="400"/>
 
 
 ### Dependencies
