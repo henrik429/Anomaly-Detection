@@ -47,8 +47,8 @@ def xavier_init(m):
 
 class ALAD:
     """
-    This class contains all necessary functions to train and 
-    evaluate the ALAD model based on the Paper 
+    This class contains all necessary functions to train and
+    evaluate the ALAD model based on the Paper
     (https://arxiv.org/pdf/1812.02288.pdf) as well as to save
     and load the trained networks.
     """
@@ -105,7 +105,12 @@ class ALAD:
             self.dis_xx = img.DiscriminatorXX(latent_dim).to(self.device)
             self.dis_zz = img.DiscriminatorZZ(latent_dim).to(self.device)
 
-            self.train_loader, self.valid_loader, self.test_loader, self.number_anomalous_samples = (
+            (
+                self.train_loader,
+                self.valid_loader,
+                self.test_loader,
+                self.number_anomalous_samples,
+            ) = (
                 {},
                 {},
                 {},
@@ -113,11 +118,12 @@ class ALAD:
             )
 
             for i, c in enumerate(self.classes):
-                self.train_loader[c], self.valid_loader[c], self.test_loader[
-                    c
-                ], self.number_anomalous_samples[c] = Dataloader(
-                    self.dataset, normal_class=i, batch_size=self.batch_size
-                )
+                (
+                    self.train_loader[c],
+                    self.valid_loader[c],
+                    self.test_loader[c],
+                    self.number_anomalous_samples[c],
+                ) = Dataloader(self.dataset, normal_class=i, batch_size=self.batch_size)
 
         elif dataset == "KDDCup":
             optimizer_kwargs = {"lr": 1e-5}
@@ -129,9 +135,12 @@ class ALAD:
             self.dis_xx = tab.DiscriminatorXX(latent_dim).to(self.device)
             self.dis_zz = tab.DiscriminatorZZ(latent_dim).to(self.device)
 
-            self.train_loader, self.valid_loader, self.test_loader, self.number_anomalous_samples = Dataloader(
-                self.dataset, batch_size=self.batch_size
-            )
+            (
+                self.train_loader,
+                self.valid_loader,
+                self.test_loader,
+                self.number_anomalous_samples,
+            ) = Dataloader(self.dataset, batch_size=self.batch_size)
 
         else:
             raise NameError("No valid dataset.")
@@ -299,9 +308,14 @@ class ALAD:
         self.d_optimizer.zero_grad()
         self.g_optimizer.zero_grad()
 
-        dis_loss_xz, dis_loss_xx, dis_loss_zz, loss_generator, loss_encoder, cycle_consistency_loss = self._forward(
-            x
-        )
+        (
+            dis_loss_xz,
+            dis_loss_xx,
+            dis_loss_zz,
+            loss_generator,
+            loss_encoder,
+            cycle_consistency_loss,
+        ) = self._forward(x)
 
         loss_d = dis_loss_xz + dis_loss_xx + dis_loss_zz
 
@@ -337,9 +351,14 @@ class ALAD:
         Args:
           data: data points used for validation."""
         with torch.no_grad():
-            dis_loss_xz, dis_loss_xx, dis_loss_zz, loss_generator, loss_encoder, cycle_consistency_loss = self._forward(
-                x
-            )
+            (
+                dis_loss_xz,
+                dis_loss_xx,
+                dis_loss_zz,
+                loss_generator,
+                loss_encoder,
+                cycle_consistency_loss,
+            ) = self._forward(x)
 
             self.writer.add_scalar(
                 "valid_discriminator_xz loss", dis_loss_xz.item(), self.step_id
@@ -531,7 +550,7 @@ class ALAD:
             )
             fpr, tpr, _ = roc_curve(targets, scores, pos_label=1)
 
-            line, = ax.plot(
+            (line,) = ax.plot(
                 fpr,
                 tpr,
                 lw=lw,
@@ -592,8 +611,8 @@ class ALAD:
         """
         Create two plots, one with original scores and one with binary scores.
         In order to enable second one, following steps are made:
-            1. Transform contiguous score into binary score.
-            2. Search for threshold to distinguish between normal and anomalous.
+            1. Search for threshold to distinguish between normal and anomalous.
+            2. Transform contiguous score into binary score, i.e. receive the value one or zero.
 
         Note: The closer the score to zero, the more probable the sample stems from the learned normal distribution.
         Vice versa for anomalous samples.

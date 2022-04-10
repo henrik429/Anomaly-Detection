@@ -100,4 +100,3 @@ class DiscriminatorZZ(nn.Module):
         out = self.dropout(self.leakyReLU(self.fc1(out)))
         out = self.dropout(self.fc2(out))
         return out
-

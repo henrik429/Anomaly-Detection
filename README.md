@@ -1,6 +1,6 @@
 # Adversarially Learned Anomaly Detection[*](https://arxiv.org/pdf/1812.02288.pdf)
 
-[![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
+[![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-370/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 This repository reproduces the content of the
@@ -52,38 +52,46 @@ reproduce and validate these results.
 In GANs, the generator receives random variables, _z_, sampled from a latent Gaussian distribution as input
 and tries to generate data, _X_, resembling data space that should be learned. In contrast, the discriminator tries to
 distinguish between real data samples and those produced by the generator. During training the generator tries 
-to better fool the discriminator and the discriminator tries to better detect real and fake samples.
+to better fool the discriminator and the discriminator to better detect real and fake samples.
 
 The architecture of the ALAD model is expanded by a few networks so that it comprises 
 a generator _G_, an encoder _E_ and three discriminators _D<sub>ZZ</sub>_,  _D<sub>XZ</sub>_ and  _D<sub>XX</sub>_. 
 As previously mentioned, Encoder learns to invert the generator which maps data samples _X_ 
 to the latent space _z_ during training. Both are not directly connected and they never see their outputs.
-Each discriminator obtains as an input a 2D-tuple,  _D<sub>XZ</sub>_ at first position a 
-data sample and  at the second position a latent variable, _D<sub>ZZ</sub>_ at both positions latent variables and _D<sub>XX</sub>_ 
-as well as at both positions samples from data space. 
+Each discriminator obtains as an input a two-dimensional tuple,  _D<sub>XZ</sub>_ at the first position a data sample and at the second sition a latent variable, _D<sub>XX</sub>_ at both positions samples from data space and _D<sub>ZZ</sub>_ at both positions variables from latent space. 
 The discriminator _D<sub>XZ</sub>_ is similar to the discriminator of 
-GAN. It not only distinguish between real and fake sample, but also between _z_ and _E(X)_. So, the generator tries to infer the data space and the encoder to project the data sample into the latent space. 
-The discriminator _D<sub>XX</sub>_ learns to recognize if the second input is equal to the first. The same applies for _D<sub>ZZ</sub>_, only with the different input.
+GAN. It not only distinguish between real and fake sample, but also between _z_ and _E(X)_. So, the generator learns to infer the data space and the encoder to project the data sample into the latent space. 
+The discriminator _D<sub>XX</sub>_ learns to recognize if the second input is equal to the first. The same applies for _D<sub>ZZ</sub>_, only with different input.
 
-<img src="pictures/alad_architecture.png" width="500"/>
+<p align="center">
+<img src="pictures/ALAD_architecture.png" width="500" alt="Logo"/>
 
 ## Stabilizing GAN-Training and objective of ALAD
 
-The aim of this GAN is that cycle-consistency is achieved, i.e. _G_(_E_(_X_)) is almost equal to _X_, in order to use it for athe reconstruction-based anomaly detection method. This is accomplished by incorporating three terms into the objective which is defined as follows:
+The aim of this GAN is that cycle-consistency is achieved, i.e. the reconstruction _G_(_E_(_X_)) is almost equal to original sample _X_ in order to use it for athe reconstruction-based anomaly detection method. This is accomplished by incorporating three terms into the objective which is defined as follows:
 
-
+<p align="center">
 <img src="http://www.sciweavers.org/tex2img.php?eq=min_%7BG%2CE%7D%20max_%7BD_%7Bxz%7D%2C%20D_%7Bxx%7D%2CD_%7Bzz%7D%7D%20%20%20V%20%28D_%7Bxz%7D%2C%20D_%7Bxx%7D%2CD_%7Bzz%7D%2C%20E%2C%20G%29%20%3D%0AV%20%28D_%7Bxz%7D%2C%20E%2C%20G%29%20%2B%20V%20%28D_%7Bxx%7D%2C%20E%2C%20G%29%20%2B%20V%20%28D_%7Bzz%7D%2C%20E%2C%20G%29&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="min_{G,E} max_{D_{xz}, D_{xx},D_{zz}}   V (D_{xz}, D_{xx},D_{zz}, E, G) =V (D_{xz}, E, G) + V (D_{xx}, E, G) + V (D_{zz}, E, G)" width="694" height="19" />
 
-The first term is known from the BiGAN [[4](https://arxiv.org/pdf/1605.09782v7.pdf)] and second term from the ALICE framework [[5](https://arxiv.org/pdf/1709.01215.pdf)]. The last one was implemented by the authors themself. 
+The first term is known from the BiGAN [[4](https://arxiv.org/pdf/1605.09782v7.pdf)] and defined as follows:
 
-By employing the discriminator _D<sub>XX</sub>_, it is achieved that the encoder can map data into the latent space so that the generator can best possible reconstruct the encoded samples. The reason is that the generator and encoder "work together" to fool _D<sub>XX</sub>_.The same principle applies for the discriminator _D<sub>ZZ</sub>_, only vice versa. 
+<img src="http://www.sciweavers.org/tex2img.php?eq=V%20%28D_%7Bxz%7D%2C%20E%2C%20G%29%20%3D%20%20%5Cmathbb%7BE%7D_%7Bx%20%5Csim%20p_x%7D%20%5Blog%20D_%7Bxz%7D%20%28x%2C%20E%28x%29%29%5D%0A%2B%20%5Cmathbb%7BE%7D_%7Bz%20%5Csim%20p_z%7D%20%5B1%20-%20log%20D_%7Bxz%7D%20%28G%28z%29%2C%20z%29%5D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="V (D_{xz}, E, G) =  \mathbb{E}_{x \sim p_x} [log D_{xz} (x, E(x))]+ \mathbb{E}_{z \sim p_z} [1 - log D_{xz} (G(z), z)]" width="614" height="21" />
+
+ The second term was established by the ALICE Paper [[5](https://arxiv.org/pdf/1709.01215.pdf)] and is defined as follows:
+
+ <img src="http://www.sciweavers.org/tex2img.php?eq=V%20%28D_%7Bxx%7D%2C%20E%2C%20G%29%20%3D%20%20%5Cmathbb%7BE%7D_%7Bx%20%5Csim%20p_x%7D%20%5Blog%20D_%7Bxx%7D%20%28x%2C%20x%29%5D%0A%2B%20%5Cmathbb%7BE%7D_%7Bx%20%5Csim%20p_x%7D%20%5B1%20-%20log%20D_%7Bxx%7D%20%28x%2C%20G%28E%28x%29%29%29%5D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="V (D_{xx}, E, G) =  \mathbb{E}_{x \sim p_x} [log D_{xx} (x, x)]+ \mathbb{E}_{x \sim p_x} [1 - log D_{xx} (x, G(E(x)))]" width="619" height="21" />
+
+The last one was implemented by the authors themself and is defined as:
+
+<img src="http://www.sciweavers.org/tex2img.php?eq=V%20%28D_%7Bzz%7D%2C%20E%2C%20G%29%20%3D%20%20%5Cmathbb%7BE%7D_%7Bz%20%5Csim%20p_z%7D%20%5Blog%20D_%7Bzz%7D%20%28z%2C%20z%29%5D%0A%2B%20%5Cmathbb%7BE%7D_%7Bz%20%5Csim%20p_z%7D%20%5B1%20-%20log%20D_%7Bzz%7D%20%28E%28G%28z%29%29%2C%20z%29%5D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="V (D_{zz}, E, G) =  \mathbb{E}_{z \sim p_z} [log D_{zz} (z, z)]+ \mathbb{E}_{z \sim p_z} [1 - log D_{zz} (E(G(z)), z)]" width="607" height="21" />
+
+By employing the discriminator _D<sub>XX</sub>_, it is achieved that the encoder can map data into the latent space so that the generator can best possible reconstruct the encoded samples. The reason is that the generator and encoder must "work together" to fool _D<sub>XX</sub>_.The same principle applies for the discriminator _D<sub>ZZ</sub>_, only vice versa. 
 
 
 ## How to detect anomalies?
 
-It is ensured that the ALAD model can learn to encode and reconstruct samples from data space. The ALAD model is a reconstruction-based anomaly detection technique which evaluates how far 
-a sample is from its reconstruction. If the model is exclusively trained with normal samples, then we expect that samples from the normal distribution should be accurately
-reconstructed whereas anomalous samples will likely be poorly reconstructed. 
+The ALAD model is a reconstruction-based anomaly detection technique which decides whether a sample is anomalous based on the quality of the reconstruction.
+By reaching cycle-consistency it is ensured that the ALAD model can learn to encode and reconstruct samples from data space and this is needed to evaluate how far a sample is from its reconstruction. If the model is exclusively trained with normal samples, then we expect that samples from the normal distribution can be accurately reconstructed whereas anomalous samples will likely be poorly reconstructed. 
 At last, the distance between original and reconstructed samples has to be determined. 
 In their own ablation studies it turned out that utilizing the Euclidean distance between the original samples and their reconstructions in data space performed not best. Instead
 the output before the logits (i.e. before the last layer) of the discriminator _D<sub>XX</sub>_ is taken, where once the input is twice the sample itself and once the sample and the corresponding reconstruction. Then, a L1 reconstruction error between the two outputs which is used as an anomaly score.
@@ -99,28 +107,42 @@ remaining 20% as are kept as test set. 25% from the training set are taken for a
 
 ### KDDCup99 dataset
 
-The dataset contains samples of 41 dimensions, where 34 of them are continuous
+The KDDCup99 dataset is a network intrusion dataset where i.a. features are _num\_failed\_logins_, _num\_access\_files_ or _num\_file\_creations_. 
+It contains samples of 41 dimensions, where 34 of them are continuous
 and 7 are categorical. Categorical features were encoded to one-hot representations resulting in a total of 121 features. Due to the high proportion of outliers in the KDD dataset, "normal" data samples are treated as anomalies. 20% of samples with the highest anomaly scores A(x) are classified as anomalies (positive class).
 
 ### CIFAR-10 dataset
 
-Pixels were scaled to be in range -1 and 1. Ten different datasets each CIFAR-10 are computed where each class is once deemed to be normal and the remaining 9 as anomalous.
+The CIFAR-10 dataset consists of ten classes including animals and vehicles such as _bird_ or _ship_.
+The image pixels were scaled to be in range -1 and 1. Ten different datasets are computed where each class is once deemed to be normal and the remaining 9 as anomalous.
 
 ## Comparison of Paper's and reproduced results 
 
+My experimental results can be looked up at https://git.imp.fu-berlin.de/henris07/anomalydetection/-/blob/main/run.ipynb. There is also described how to use the training class `ALAD`.
+
 ### KDDCup99 dataset
+
+Both precision-recall plots result from the reproduced evaluation. The left one is the precision-recall curve where the scores are taken as they were outputed from the score function. 
+For the right plot a threshold was found based on the number of anomalous samples which is for the KDDCup99 dataset around 20%. So, those score becomes the threshold where around 20% of the scores are bigger than that score, i.e. if they are beneath the threshold they were considered as normal and above as anomalous since __the higher the value the higher the likelihood of an anomalous sample__. Finally, the scores were transformed into binary scores where anomalous samples were represented as ones and normal ones as zeros.
 
 <img src="pictures/KDDmyPR.png" width="400"/>
 
 <img src="pictures/KDDmyBinaries.png" width="400"/>
 
-<img src="pictures/KDD_table.png" width="400"/>
+The average precision of the left and right precision-recall curve is 0.83 and 0.85, respectively.
+In the table beneath the outcomes of the metrics, precision, recall and F1-score, can be seen.
+The precision amount to 0.9481, the Recall to 0.9417 and the F1-score to 0.9449. This metrics were computed by the binary scores. As the ALAD model, the reproduction outperformed each other method.
+Also, the results of the reproduction are highly comparable to those of the ALAD Paper. Even in precision the reproduction could exceed the one of the Paper.
 
-recision: 0.9481 Recall: 0.9417 F1-Score: 0.9449
+<img src="pictures/KDD_table.png" width="400"/>
 
 ### CIFAR-10 dataset
 
-<img src="pictures/CifarMyBars.png" width="400"/>
+The reproduces results can be seen on the left bar plot and those of the Paper, the light blue column labeled as _ALAD_, in the right bar plot.
+The reproduced results 
+The classes _plane, bird, deer, frog and ship_ performed best for the reproduced results as well as in the Paper whereas _car, cat, dog, horse and truck_ achieved worst result for the reproduced as well as in the Pape. 
+
+<img src="pictures/CifarMyBars.png" alt=lol width="400"/>
 
 <img src="pictures/PaperBarCIFAR.png" width="400"/>
 
@@ -128,10 +150,20 @@ recision: 0.9481 Recall: 0.9417 F1-Score: 0.9449
 ## Conclusion
 
 
+## Resources
+
+
+### Appendix
+
+
+
+The presentation slides are located at https://git.imp.fu-berlin.de/henris07/anomalydetection/-/blob/main/cybersecurity_AI_slides.pdf.
+
+
 
 ### Dependencies
 
-- [Python 3.7](https://www.python.org/)
+- [Python 3.8](https://www.python.org/)
 - [PyTorch](https://pytorch.org/)
 
 

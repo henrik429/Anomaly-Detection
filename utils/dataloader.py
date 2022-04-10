@@ -25,7 +25,7 @@ def normalize(image):
 class DataSet(Dataset):
     def __init__(self, data, labels, transform=Compose([ToTensor(), normalize])):
         super(DataSet, self).__init__()
-        self.data = data 
+        self.data = data
         self.labels = labels
         self.transform = transform
 
