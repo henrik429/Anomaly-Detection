@@ -84,7 +84,7 @@ The first term is known from the BiGAN [[2](https://arxiv.org/pdf/1605.09782v7.p
 
 <img src="pictures/bigan_term.png"/>
 
- The second term was established by the ALICE Paper [[3](https://arxiv.org/pdf/1709.01215.pdf)] and is defined as follows:
+ The second term was established by the ALICE Paper [[3](https://arxiv.org/pdf/1709.01215.pdf)] and is defined as:
 
 <img src="pictures/alice_term.png"/>
 
@@ -139,7 +139,7 @@ The image pixels were scaled to be in range -1 and 1. Ten different datasets are
 ## Comparison of Paper's and reproduced results 
 
 My experimental results can be looked up at https://git.imp.fu-berlin.de/henris07/anomalydetection/-/blob/main/run.ipynb. There is also described how to use the training class `ALAD`.
-Note that the Paper did include spectral normalization for their final results whereas I used 
+Note that the Paper include spectral normalization for their final results whereas I used 
 standard batch normalization.
 
 ### KDDCup99 dataset
@@ -163,8 +163,8 @@ The left one is the precision-recall curve where the scores are taken as they
 
 The average precision of the left and right precision-recall curve is 0.83 and 0.85, respectively.
 In the table beneath the outcomes of the metrics, precision, recall and F1-score, can be seen.
-The precision amount to 0.9481, the Recall to 0.9417 and the F1-score to 0.9449. This metrics were computed by the binary scores. As the ALAD model, the reproduction outperformed each other method.
-Also, the results of the reproduction are highly comparable to those of the ALAD Paper. Even in precision the reproduction could exceed the one of the Paper.
+The precision amounts to 0.9481, the Recall to 0.9417 and the F1-score to 0.9449. This metrics were computed by the binary scores. As the ALAD model, the reproduction outperformed each other method.
+Also, the results of the reproduction are highly comparable to those of the ALAD Paper. The precision of the reproduction could even exceed those of the Paper.
 
 <img src="pictures/KDD_table.png" width="400"/>
 
@@ -182,7 +182,7 @@ In contrast, the results of the Paper attained an AUC for class _plane_ of
  for _horse_ ca. 0.52, for _ship_ ca. 0.77 and for _truck_ ca. 0.42.
  It can be seen that the five best classes were _plane, bird, deer, frog and ship_
   and the five worst _car, cat, dog, horse and truck_
-   for the reproduced results as well as for the Paper. Furthermore,
+   for the reproduced results as well as for those of the Paper. Furthermore,
   the outcomes of the reproduction and the Paper are very close and they 
   deviate just at the second decimal place.
   Even in most of the classes
@@ -239,11 +239,11 @@ Goodfellow, I.J., Pouget-Abadie, J., Mirza, M., Xu, B., Warde-Farley, D., Ozair,
 The presentation slides are located at https://git.imp.fu-berlin.de/henris07/anomalydetection/-/blob/main/cybersecurity_AI_slides.pdf.
 
 
-The architecture of the KDDCup99 dataset is defined as follows:
+The architecture of the KDDCup99 dataset is defined as:
 
 <img src="pictures/KDDCup_architecture.png" width="400"/>
 
-The architecture of the image datasets are defined as follows:
+The architecture of the image datasets are defined as:
 
 <img src="pictures/image_architecture.png" width="400"/>
 
@@ -252,8 +252,9 @@ The architecture of the image datasets are defined as follows:
 
 - [Python 3.8](https://www.python.org/)
 - [PyTorch](https://pytorch.org/)
-
-
+- [Numpy](https://numpy.org/)
+- [Matplotlib](https://matplotlib.org/)
+- [Pandas](https://pandas.pydata.org/)
 
 
 
