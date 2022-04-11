@@ -3,7 +3,7 @@
 [![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-370/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-This repository reproduces the content of the
+This repository reproduces the work of the
 Paper [Adversarially Learned Anomaly Detection](https://arxiv.org/pdf/1812.02288.pdf) (ALAD) [[1](https://arxiv.org/pdf/1812.02288.pdf)].
 
 ## Anomaly Detection
@@ -78,34 +78,40 @@ sample _X_ in order to use it for the reconstruction-based anomaly
 detection method. This is accomplished by incorporating three terms into the objective which is defined as follows:
 
 <p align="center">
-<img src="http://www.sciweavers.org/tex2img.php?eq=min_%7BG%2CE%7D%20max_%7BD_%7Bxz%7D%2C%20D_%7Bxx%7D%2CD_%7Bzz%7D%7D%20%20%20V%20%28D_%7Bxz%7D%2C%20D_%7Bxx%7D%2CD_%7Bzz%7D%2C%20E%2C%20G%29%20%3D%0AV%20%28D_%7Bxz%7D%2C%20E%2C%20G%29%20%2B%20V%20%28D_%7Bxx%7D%2C%20E%2C%20G%29%20%2B%20V%20%28D_%7Bzz%7D%2C%20E%2C%20G%29&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="min_{G,E} max_{D_{xz}, D_{xx},D_{zz}}   V (D_{xz}, D_{xx},D_{zz}, E, G) =V (D_{xz}, E, G) + V (D_{xx}, E, G) + V (D_{zz}, E, G)" width="694" height="19" />
+<img src="pictures/alad_objective.png"/>
 
 The first term is known from the BiGAN [[2](https://arxiv.org/pdf/1605.09782v7.pdf)] and defined as follows:
 
-<img src="http://www.sciweavers.org/tex2img.php?eq=V%20%28D_%7Bxz%7D%2C%20E%2C%20G%29%20%3D%20%20%5Cmathbb%7BE%7D_%7Bx%20%5Csim%20p_x%7D%20%5Blog%20D_%7Bxz%7D%20%28x%2C%20E%28x%29%29%5D%0A%2B%20%5Cmathbb%7BE%7D_%7Bz%20%5Csim%20p_z%7D%20%5B1%20-%20log%20D_%7Bxz%7D%20%28G%28z%29%2C%20z%29%5D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="V (D_{xz}, E, G) =  \mathbb{E}_{x \sim p_x} [log D_{xz} (x, E(x))]+ \mathbb{E}_{z \sim p_z} [1 - log D_{xz} (G(z), z)]" width="614" height="21" />
+<img src="pictures/bigan_term.png"/>
 
  The second term was established by the ALICE Paper [[3](https://arxiv.org/pdf/1709.01215.pdf)] and is defined as follows:
 
- <img src="http://www.sciweavers.org/tex2img.php?eq=V%20%28D_%7Bxx%7D%2C%20E%2C%20G%29%20%3D%20%20%5Cmathbb%7BE%7D_%7Bx%20%5Csim%20p_x%7D%20%5Blog%20D_%7Bxx%7D%20%28x%2C%20x%29%5D%0A%2B%20%5Cmathbb%7BE%7D_%7Bx%20%5Csim%20p_x%7D%20%5B1%20-%20log%20D_%7Bxx%7D%20%28x%2C%20G%28E%28x%29%29%29%5D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="V (D_{xx}, E, G) =  \mathbb{E}_{x \sim p_x} [log D_{xx} (x, x)]+ \mathbb{E}_{x \sim p_x} [1 - log D_{xx} (x, G(E(x)))]" width="619" height="21" />
+<img src="pictures/alice_term.png"/>
 
 The last one was implemented by the authors themself and is defined as:
 
-<img src="http://www.sciweavers.org/tex2img.php?eq=V%20%28D_%7Bzz%7D%2C%20E%2C%20G%29%20%3D%20%20%5Cmathbb%7BE%7D_%7Bz%20%5Csim%20p_z%7D%20%5Blog%20D_%7Bzz%7D%20%28z%2C%20z%29%5D%0A%2B%20%5Cmathbb%7BE%7D_%7Bz%20%5Csim%20p_z%7D%20%5B1%20-%20log%20D_%7Bzz%7D%20%28E%28G%28z%29%29%2C%20z%29%5D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0" align="center" border="0" alt="V (D_{zz}, E, G) =  \mathbb{E}_{z \sim p_z} [log D_{zz} (z, z)]+ \mathbb{E}_{z \sim p_z} [1 - log D_{zz} (E(G(z)), z)]" width="607" height="21" />
+<img src="pictures/latent_term.png"/>
 
 By employing the discriminator _D<sub>XX</sub>_, it is achieved that the encoder can map data into the latent space so that the generator can best possible reconstruct the encoded samples. The reason is that the generator and encoder must "work together" to fool _D<sub>XX</sub>_.The same principle applies for the discriminator _D<sub>ZZ</sub>_, only vice versa. 
 
 
 ## How to detect anomalies?
 
-The ALAD model is a reconstruction-based anomaly detection technique which decides whether a sample is anomalous based on the quality of the reconstruction.
-By reaching cycle-consistency it is ensured that the ALAD model can learn to encode and reconstruct samples from data space and this is needed to evaluate how far a sample is from its reconstruction. If the model is exclusively trained with normal samples, then we expect that samples from the normal distribution can be accurately reconstructed whereas anomalous samples will likely be poorly reconstructed. 
-Subsequently, the distance between original and reconstructed samples has to be determined. 
-In their own ablation studies it turned out that utilizing the Euclidean distance between the original samples and their reconstructions in data space performed not best. Instead
+The ALAD model is a reconstruction-based anomaly detection technique which decides whether a sample is anomalous based 
+on the distance of the original sample and its reconstruction.
+By reaching cycle-consistency it is ensured that the ALAD model can learn to encode and reconstruct 
+samples from data space and this is needed to evaluate how far a sample is from its reconstruction. 
+If the model is exclusively trained with normal samples, then we expect that samples from the normal 
+distribution can be accurately reconstructed whereas anomalous samples will likely be poorly reconstructed. 
+Subsequently, the distance between original and reconstructed samples has to be determined in order to assess how
+far or close a sample is to its reconstruction.
+In the ablation studies of the authors it turned out that utilizing the Euclidean distance between the 
+original samples and their reconstructions in data space performed not best. Instead
 the output before the logits (i.e. before the last layer) of the discriminator _D<sub>XX</sub>_ is taken, 
 where once the input is twice the sample itself and once the sample 
 and the corresponding reconstruction. Then, a L1 loss
 is computed between these two outputs and used as an anomaly score.
-After training the model on normal data, only _G_, _E_ and _D<sub>XX</sub>_ is needed for the anomaly detection task and
+After training the model, only _G_, _E_ and _D<sub>XX</sub>_ is needed for the anomaly detection task and
  the procedure of the score calculation can be described as follows:
 
 <img src="pictures/ALAD_algorithm.png" width="400"/>
@@ -133,6 +139,8 @@ The image pixels were scaled to be in range -1 and 1. Ten different datasets are
 ## Comparison of Paper's and reproduced results 
 
 My experimental results can be looked up at https://git.imp.fu-berlin.de/henris07/anomalydetection/-/blob/main/run.ipynb. There is also described how to use the training class `ALAD`.
+Note that the Paper did include spectral normalization for their final results whereas I used 
+standard batch normalization.
 
 ### KDDCup99 dataset
 
@@ -142,12 +150,12 @@ The left one is the precision-recall curve where the scores are taken as they
  For the right plot binary scores were used to create the precision recall curve.
  To assign the scores the values _zeros_ and _ones_, representing anomalous and
   normal samples, 
- respectively, a threshold is required whicih is found by the number of 
- anomalous samples which is for the KDDCup99 dataset around 20%. So,
-  those score becomes the threshold where around 20% of the scores are bigger
-   than that score. Therefore, scores beneath the threshold were considered 
-   as normal and above as anomalous __since the worse the reconstruction the higher
-   the score__.
+ respectively, a threshold is required where scores beneath the threshold were considered 
+   as normal and above as anomalous.
+ The threshold is selected based on the number of 
+ anomalous samples. This is around 20% of the length for the KDDCup99 dataset. So,
+  those score becomes the threshold where around 20% of all scores are bigger
+   than it. 
 
 <img src="pictures/KDDmyPR.png" width="400"/>
 
@@ -224,7 +232,7 @@ https://nix-united.com/blog/machine-learning-for-anomaly-detection-in-depth-over
 [[9](https://arxiv.org/pdf/1406.2661.pdf)]
 Goodfellow, I.J., Pouget-Abadie, J., Mirza, M., Xu, B., Warde-Farley, D., Ozair, S., Courville, A.C., & Bengio, Y. (2014). Generative Adversarial Nets. NIPS.
 
-### Appendix
+## Appendix
 
 
 
@@ -240,7 +248,7 @@ The architecture of the image datasets are defined as follows:
 <img src="pictures/image_architecture.png" width="400"/>
 
 
-### Dependencies
+## Dependencies
 
 - [Python 3.8](https://www.python.org/)
 - [PyTorch](https://pytorch.org/)

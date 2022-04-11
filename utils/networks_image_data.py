@@ -10,6 +10,9 @@ import numpy as np
 def conv_block(
     in_channels, out_channels, kernel_size=4, stride=2, padding=1, batch_norm=True
 ):
+    """
+    Encapsulate convolution block in convolution, batch normalization and leaky ReLU.
+    """
     batch_norm = nn.BatchNorm2d(out_channels) if batch_norm else nn.Identity()
     return [
         nn.Conv2d(
@@ -33,6 +36,9 @@ def deconv_block(
     activation="ReLU",
     batch_norm=True,
 ):
+    """
+    Encapsulate deconvolution block in deconvolution, batch normalization and activation function.
+    """
     activation = nn.ReLU() if activation == "ReLU" else nn.Tanh()
     batch_norm = nn.BatchNorm2d(out_channels) if batch_norm else nn.Identity()
     return [
@@ -128,6 +134,10 @@ class Decoder(nn.Module):
 
 
 class DiscriminatorXZ(nn.Module):
+    """
+    The discriminator D_xz as known from the BiGAN.
+    """
+
     def __init__(self, latent_dim=100):
         super().__init__()
         self.latent_dim = latent_dim
@@ -216,12 +226,16 @@ class DiscriminatorXZ(nn.Module):
 
 
 class DiscriminatorXX(nn.Module):
+    """
+    The discriminator D_xx as known from the ALICE framework.
+    """
+
     def __init__(self, latent_dim=100):
         super().__init__()
         self.latent_dim = latent_dim
         self.dropout = nn.Dropout(p=0.2)
 
-        # Note: in the original paper padding would be "SAME" (i.e. padding is equal to 2).
+        # As in the original paper said padding is "SAME" (i.e. padding is equal to 2).
         self.conv1 = nn.Sequential(
             *conv_block(6, 64, kernel_size=5, stride=2, padding=2, batch_norm=False)
         )
@@ -243,6 +257,10 @@ class DiscriminatorXX(nn.Module):
 
 
 class DiscriminatorZZ(nn.Module):
+    """
+    The discriminator D_zz as proposed by the authors.
+    """
+
     def __init__(self, latent_dim=100):
         super().__init__()
         self.latent_dim = latent_dim

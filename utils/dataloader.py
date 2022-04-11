@@ -129,7 +129,6 @@ def load_kdd(csv_path):
     new_columns = csv.columns.to_list()
     new_columns.remove("label")
     new_columns.append("label")
-
     csv = csv.reindex(columns=new_columns)
 
     return csv
@@ -224,6 +223,8 @@ def Dataloader(dataset, normal_class=0, batch_size=32):
         f"{np.round(num_anomalous_sample / y_test.shape[0] * 100, decimals=4)}%"
         f" (In Total: {num_anomalous_sample} of {y_test.shape[0]} samples)"
     )
+
+    # Create dataloader for train, valid and test set.
 
     train_ds = DataSet(x_train, y_train, transform=transform)
     train_loader = torch.utils.data.DataLoader(

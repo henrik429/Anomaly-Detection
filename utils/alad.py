@@ -8,8 +8,6 @@ import numpy as np
 from sklearn.metrics import roc_curve, roc_auc_score
 import matplotlib.pyplot as plt
 from sklearn.metrics import (
-    precision_recall_curve,
-    f1_score,
     PrecisionRecallDisplay,
     precision_recall_fscore_support,
 )
@@ -168,7 +166,7 @@ class ALAD:
         self.l1 = nn.L1Loss(reduction="none").to(self.device)
 
     def save_networks(self, normal_sample=None):
-        """Save networks according to the kind of data."""
+        """Save networks according to the kind of dataset."""
         if self.dataset == "CIFAR10":
             path = f"{self.network_dir}/{normal_sample}.pth"
         elif self.dataset == "KDDCup":

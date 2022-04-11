@@ -42,6 +42,10 @@ class Decoder(nn.Module):
 
 
 class DiscriminatorXZ(nn.Module):
+    """
+    The discriminator D_xz as known from the BiGAN.
+    """
+
     def __init__(self, latent_dim=32):
         super().__init__()
         self.latent_dim = latent_dim
@@ -67,6 +71,10 @@ class DiscriminatorXZ(nn.Module):
 
 
 class DiscriminatorXX(nn.Module):
+    """
+    The discriminator D_xx as known from the ALICE framework.
+    """
+
     def __init__(self, latent_dim=32):
         super().__init__()
         self.latent_dim = latent_dim
@@ -85,6 +93,10 @@ class DiscriminatorXX(nn.Module):
 
 
 class DiscriminatorZZ(nn.Module):
+    """
+    The discriminator D_zz as proposed by the authors.
+    """
+
     def __init__(self, latent_dim=32):
         super().__init__()
         self.latent_dim = latent_dim
